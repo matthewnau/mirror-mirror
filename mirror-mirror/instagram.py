@@ -21,7 +21,7 @@ def scrape_instagram(username):
 		#get the user's unique user id from the profile page
 		unique_user_id = profile_page[1][0:profile_page[1].index('"')]
 
-		#get the dynamically created javascript file
+		#get the dynamically created javascript file's temporary unique pathway
 		unique_commons_js = profile_page[12].split("en_US_Commons.js/")[1]
 		unique_commons_js = unique_commons_js[0:unique_commons_js.index('.js')]
 

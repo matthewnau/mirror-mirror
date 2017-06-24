@@ -18,7 +18,7 @@ The complete syntax should look similar to the following, where `instagram` is t
 scrape_instagram("johndoe")
 ```
 
-That's all there is to it! Simply calling the function, and providing the `username` argument will return an array containing all scraped image links!
+That's all there is to it! Simply calling the function, and providing the `username` argument will return a lidt containing all scraped image links. If the profile does not exist, or the user account has no photos associated with it, the list will return empty.
 
 ---
 

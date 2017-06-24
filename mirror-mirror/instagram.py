@@ -10,44 +10,47 @@ def scrape_instagram(username):
 	#download the user's profile page
 	profile_page = s.get('http://instagram.com/'+username).text
 
-	#test if the user's account is private
-	if '"is_private": true' in profile_page:
-		user_links_page = profile_page.split('"')
+	#check if account exists
+	if '<body class=" p-error dialog-404">' not in profile_page:
 
-	#otherwise, get all the other images
-	else:
-		profile_page = profile_page.split('"owner": {"id": "')
+		#test if the user's account is private
+		if '"is_private": true' in profile_page:
+			user_links_page = profile_page.split('"')
 
-		#get the user's unique user id from the profile page
-		unique_user_id = profile_page[1][:profile_page[1].index('"')]
+		#otherwise, get all the other images
+		else:
+			profile_page = profile_page.split('"owner": {"id": "')
 
-		#get the dynamically created javascript file's temporary unique pathway
-		unique_commons_js = profile_page[12].split('en_US_Commons.js/')[1]
-		unique_commons_js = unique_commons_js[:unique_commons_js.index('.js')]
+			#get the user's unique user id from the profile page
+			unique_user_id = profile_page[1][:profile_page[1].index('"')]
 
-		#download the dynamically generated javascript page to get the unique session id
-		javascript_page = s.get('https://www.instagram.com/static/bundles/en_US_Commons.js/'+unique_commons_js+'.js')
-		javascript_page = javascript_page.text.split('return e.profilePosts.byUserId.get(t).pagination},queryId:"')[1]
+			#get the dynamically created javascript file's temporary unique pathway
+			unique_commons_js = profile_page[len(profile_page)-1].split('en_US_Commons.js/')[1]
+			unique_commons_js = unique_commons_js[:unique_commons_js.index('.js')]
 
-		#get the unique session id from the javascript page
-		unique_session_id = javascript_page[:javascript_page.index('"')]
+			#download the dynamically generated javascript page to get the unique session id
+			javascript_page = s.get('https://www.instagram.com/static/bundles/en_US_Commons.js/'+unique_commons_js+'.js')
+			javascript_page = javascript_page.text.split('return e.profilePosts.byUserId.get(t).pagination},queryId:"')[1]
 
-		#using the session and user id's, download the file containing the links to all pictures ever posted
-		user_links_page = s.get('https://www.instagram.com/graphql/query/?query_id='+unique_session_id+'&id='+unique_user_id+'&first=1000000')
-		user_links_page = user_links_page.text.split('"')
+			#get the unique session id from the javascript page
+			unique_session_id = javascript_page[:javascript_page.index('"')]
 
-	#collect the url of every possible jpg picture
-	for link in user_links_page:
-		if '.jpg' in link:
-			messy_links.append(link)
+			#using the session and user id's, download the file containing the links to all pictures ever posted
+			user_links_page = s.get('https://www.instagram.com/graphql/query/?query_id='+unique_session_id+'&id='+unique_user_id+'&first=1000000')
+			user_links_page = user_links_page.text.split('"')
 
-	#find the uncompressed links to the images provided, and clean them up
-	for link in messy_links:
-		segmented_link = link.split('/')
-		unique_post_id = link[::-1][:link[::-1].index('/')][::-1]
-		clean_link = 'https://'+segmented_link[2]+'/'+segmented_link[3]+'/'+unique_post_id
-		if clean_link not in clean_links:
-			clean_links.append(clean_link)
+		#collect the url of every possible jpg picture
+		for link in user_links_page:
+			if '.jpg' in link:
+				messy_links.append(link)
+
+		#find the uncompressed links to the images provided, and clean them up
+		for link in messy_links:
+			segmented_link = link.split('/')
+			unique_post_id = link[::-1][:link[::-1].index('/')][::-1]
+			clean_link = 'https://'+segmented_link[2]+'/'+segmented_link[3]+'/'+unique_post_id
+			if clean_link not in clean_links:
+				clean_links.append(clean_link)
 
 	#terminate the browsing session
 	s.close()

@@ -29,10 +29,6 @@ def scrape_twitter(username):
 		if 'profile_images' in clean_links[0]:
 			clean_links.pop(0)
 
-	#if the user has no pictures, add the default picture
-	else:
-		clean_links.append('https://abs.twimg.com/sticky/default_profile_images/default_profile.png')
-
 	#terminate the browsing session
 	s.close()
 

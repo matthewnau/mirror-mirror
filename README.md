@@ -8,7 +8,7 @@ Mirror Mirror is a library for scraping publicly available images from social we
 ---
 ## Walkthrough
 
-Here is a walkthrough on how to begin collecting high resolution images using Mirror Mirror! All you need to do is download the script for the particular site that you want to scrape, or download `master.py`, which contains all methods in one convenient file.
+Here is a walkthrough on how to begin collecting high resolution images using Mirror Mirror! All you need to do is download the script for the particular site that you want to scrape, or download `mirror-mirror.py`, which contains all methods in one convenient file.
 
 To use Mirror Mirror, simply fill in the `platform`, and pass the function the `username` argument.
 

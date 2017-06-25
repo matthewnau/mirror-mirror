@@ -1,4 +1,15 @@
+#!/usr/bin/env python3
+
 import requests
+import json
+import html
+import re
+
+URL = r'https?://[-\._:a-z0-9]+/[-\._:%\?=&/\\,;\+~#a-z0-9]+'
+ALL_URL = re.compile('^'+URL+'$', re.I)
+URLS = re.compile(URL, re.I)
+TWITER_SIZE = re.compile(r':[a-z]+$')
+
 
 def scrape_instagram(username):
 	#start a new web-browsing session
@@ -58,40 +69,63 @@ def scrape_instagram(username):
 	#return all the decompressed image links
 	return clean_links
 
+def links_from_json(json):
+	tp = type(json)
+	if tp == str:
+		if ALL_URL.match(json):
+			yield json
+		else:
+			for url in URLS.findall(json):
+				yield html.unescape(url)
+
+	elif tp == list:
+		for item in json:
+			yield from links_from_json(item)
+
+	elif tp == dict:
+		for item in json.values():
+			yield from links_from_json(item)
+
 def scrape_twitter(username):
 	#start a new web-browsing session
 	s = requests.session()
 
-	#make containers for all the links to be collected
-	messy_links, clean_links = [],[]
+	try:
+		#make containers for all the links to be collected
+		seen_links = set()
+		links = []
 
-	#using the user's username, download the file containing the links to the last 3200 pictures ever posted
-	user_links_page = s.get('https://twitter.com/i/profiles/show/'+username+'/media_timeline.json?count=3200')
-	user_links_page = user_links_page.text.split('"')
+		#using the user's username, download the file containing the links to the last 3200 pictures ever posted
+		user_links_page = s.get('https://twitter.com/i/profiles/show/'+username+'/media_timeline.json?count=3200')
+		user_links_page = json.loads(user_links_page.text)
 
-	#collect the url of every possible jpg picture
-	for link in user_links_page:
-		if '.jpg' in link:
-			messy_links.append(link)
+		#collect the url of every possible jpg picture
+		for link in links_from_json(user_links_page):
+			link = TWITER_SIZE.sub('', link)
+			if link.endswith('.jpg'):
+				if link.startswith('https://pbs.twimg.com/media/') or \
+				   link.startswith('https://pbs.twimg.com/tweet_video_thumb/') or \
+				   link.startswith('https://pbs.twimg.com/ext_tw_video_thumb/'):
+					link = link + ':orig'
 
-	#find the uncompressed links to the images provided, and clean them up
-	for link in messy_links:
-		clean_link = ''.join(link.split('\\'))
-		if clean_link not in clean_links:
-			clean_links.append(clean_link)
+				if link not in seen_links:
+					links.append(link)
+					seen_links.add(link)
 
-	#check if the account has any pictures associated with it
-	if len(clean_links) > 0:
+		#check if the account has any pictures associated with it
+		if links:
 
-		#profile picture is compressed regardless, remove it
-		if 'profile_images' in clean_links[0]:
-			clean_links.pop(0)
+			#profile picture is compressed regardless, remove it
+			if 'profile_images' in links[0]:
+				links.pop(0)
 
-	#terminate the browsing session
-	s.close()
 
-	#return all the decompressed image links
-	return clean_links
+		#return all the decompressed image links
+		return links
+
+	finally:
+		#terminate the browsing session
+		s.close()
 
 def scrape_vsco(username):
 	#start a new web-browsing session
@@ -180,3 +214,31 @@ def scrape_tinder(username):
 
 	#return all the decompressed image links
 	return clean_links
+
+if __name__ == '__main__':
+	import sys
+	if len(sys.argv) < 3:
+		sys.stderr.write('usage: mirror-mirror.py <service> <username...>\n')
+		sys.exit(1)
+	else:
+		service = sys.argv[1].lower()
+
+		if service == 'instagram':
+			scrape = scrape_instagram
+
+		elif service == 'twitter':
+			scrape = scrape_twitter
+
+		elif service == 'vsco':
+			scrape = scrape_vsco
+
+		elif service == 'tinder':
+			scrape = scrape_tinder
+
+		else:
+			sys.stderr.write('unknown service: %s\n' % service)
+			sys.exit(1)
+
+		for username in sys.argv[2:]:
+			for link in scrape(username):
+				print(link)

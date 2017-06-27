@@ -1,15 +1,6 @@
 #!/usr/bin/env python3
 
 import requests
-import json
-import html
-import re
-
-URL = r'https?://[-\._:a-z0-9]+/[-\._:%\?=&/\\,;\+~#a-z0-9]+'
-ALL_URL = re.compile('^'+URL+'$', re.I)
-URLS = re.compile(URL, re.I)
-TWITER_SIZE = re.compile(r':[a-z]+$')
-
 
 def scrape_instagram(username):
     #start a new web-browsing session
@@ -69,63 +60,43 @@ def scrape_instagram(username):
     #return all the decompressed image links
     return clean_links
 
-def links_from_json(json):
-    tp = type(json)
-    if tp == str:
-        if ALL_URL.match(json):
-            yield json
-        else:
-            for url in URLS.findall(json):
-                yield html.unescape(url)
-
-    elif tp == list:
-        for item in json:
-            yield from links_from_json(item)
-
-    elif tp == dict:
-        for item in json.values():
-            yield from links_from_json(item)
-
 def scrape_twitter(username):
     #start a new web-browsing session
     s = requests.session()
 
-    try:
-        #make containers for all the links to be collected
-        seen_links = set()
-        links = []
+    #make containers for all the links to be collected
+    messy_links, clean_links = [],[]
 
-        #using the user's username, download the file containing the links to the last 3200 pictures ever posted
-        user_links_page = s.get('https://twitter.com/i/profiles/show/'+username+'/media_timeline.json?count=3200')
-        user_links_page = json.loads(user_links_page.text)
+    #using the user's username, download the file containing the links to the last 3200 pictures ever posted
+    user_links_page = s.get('https://twitter.com/i/profiles/show/'+username+'/media_timeline.json?count=3200')
+    user_links_page = user_links_page.text.split('"')
 
-        #collect the url of every possible jpg picture
-        for link in links_from_json(user_links_page):
-            link = TWITER_SIZE.sub('', link)
-            if link.endswith('.jpg'):
-                if link.startswith('https://pbs.twimg.com/media/') or \
-                   link.startswith('https://pbs.twimg.com/tweet_video_thumb/') or \
-                   link.startswith('https://pbs.twimg.com/ext_tw_video_thumb/'):
-                    link = link + ':orig'
+    #collect the url of every possible jpg picture, find the uncompressed url
+    for link in user_links_page:
+        link = ''.join(link.split('\\'))
+        if link.endswith('.jpg'):
+            if link.startswith('https://pbs.twimg.com/media/') or \
+               link.startswith('https://pbs.twimg.com/tweet_video_thumb/') or \
+               link.startswith('https://pbs.twimg.com/ext_tw_video_thumb/'):
+                messy_links.append(link + ':orig')
 
-                if link not in seen_links:
-                    links.append(link)
-                    seen_links.add(link)
+    #make sure there are no duplicate links
+    for link in messy_links:
+        if link not in clean_links:
+            clean_links.append(link)
 
-        #check if the account has any pictures associated with it
-        if links:
+    #check if the account has any pictures associated with it
+    if len(clean_links) > 0:
 
-            #profile picture is compressed regardless, remove it
-            if 'profile_images' in links[0]:
-                links.pop(0)
+        #profile picture is compressed regardless, remove it
+        if 'profile_images' in clean_links[0]:
+            clean_links.pop(0)
 
+    #terminate the browsing session
+    s.close()
 
-        #return all the decompressed image links
-        return links
-
-    finally:
-        #terminate the browsing session
-        s.close()
+    #return all the decompressed image links
+    return clean_links
 
 def scrape_vsco(username):
     #start a new web-browsing session
@@ -250,6 +221,7 @@ def scrape_okcupid(username):
     #return all the decompressed image links
     return clean_links
 
+scrape_twitter("malihazamurd")
 if __name__ == '__main__':
     import sys
     if len(sys.argv) < 3:

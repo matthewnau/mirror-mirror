@@ -25,7 +25,7 @@ def scrape_okcupid(username):
 		#find the uncompressed links to the images provided, and clean them up
 		for link in messy_links:
 			clean_link = chosen_cdn_server+'/images/'+link[::-1][:link[::-1].index('/')][::-1]
-			clean_link = clean_link[::-1][clean_link[::-1].index(".")+1:][::-1]+'.jpeg'
+			clean_link = clean_link[::-1][clean_link[::-1].index('.')+1:][::-1]+'.jpeg'
 			if clean_link not in clean_links:
 				clean_links.append(clean_link)
 

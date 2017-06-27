@@ -221,7 +221,6 @@ def scrape_okcupid(username):
     #return all the decompressed image links
     return clean_links
 
-scrape_twitter("malihazamurd")
 if __name__ == '__main__':
     import sys
     if len(sys.argv) < 3:

@@ -28,3 +28,4 @@ That's all there is to it! Simply calling the function, and providing the `usern
 * [Twitter](https://www.twitter.com)
 * [VSCO](https://www.vsco.co)
 * [Tinder](https://www.tinder.com)
+* [OkCupid](https://www.okcupid.com)
